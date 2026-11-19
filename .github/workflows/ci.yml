@@ -1,4 +1,4 @@
-name: Build and Push Image
+name: Build, Push, and Canary Deploy
 
 on:
   push:
@@ -12,13 +12,16 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
+    outputs:
+      sha_tag: ${{ steps.vars.outputs.sha_tag }}
     steps:
-      
       - name: Checkout code
         uses: actions/checkout@v4
 
-      
+      - name: Set short SHA tag
+        id: vars
+        run: echo "sha_tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -26,20 +29,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      
-      - name: Extract image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest
-
-      
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.sha_tag }}
+            ghcr.io/${{ github.repository }}:latest
+
+  deploy-canary:
+    needs: build-and-push
+    runs-on: self-hosted
+    env:
+      NOMAD_ADDR: http://127.0.0.1:4646
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy canary to Nomad and wait for rollout
+        run: ./deploy.sh "${{ needs.build-and-push.outputs.sha_tag }}"
