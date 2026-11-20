@@ -15,8 +15,8 @@ job "nomad-canary-demo" {
       max_parallel      = 1
       canary            = 1
       min_healthy_time  = "10s"
-      healthy_deadline  = "90s"
-      progress_deadline = "2m"
+      healthy_deadline  = "3m"
+      progress_deadline = "5m"
       auto_promote      = true
       auto_revert       = true
     }
