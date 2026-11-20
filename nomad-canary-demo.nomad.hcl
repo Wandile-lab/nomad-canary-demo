@@ -15,7 +15,7 @@ job "nomad-canary-demo" {
       max_parallel     = 1
       canary           = 1
       min_healthy_time = "10s"
-      healthy_deadline = "3m"
+      healthy_deadline = "90s"
       auto_promote     = true
       auto_revert      = true
     }
@@ -43,8 +43,8 @@ job "nomad-canary-demo" {
       }
 
       env {
-        APP_VERSION = "v1.0.0"
-        FAIL_HEALTH = "false"
+        APP_VERSION = "v2.0.0-broken"
+        FAIL_HEALTH = "true"
       }
 
       resources {
